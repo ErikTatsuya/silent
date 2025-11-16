@@ -19,7 +19,7 @@ function showMessage(message, classType)
     divForm.appendChild(responseElement);
 }
 
-createUser.addEventListener("submit", (event) => {
+createUser.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const form = event.target;
@@ -30,42 +30,30 @@ createUser.addEventListener("submit", (event) => {
     //converte para json
     const jsonData = Object.fromEntries(formData.entries());
 
-    fetch
-    (
-        urlAPI, 
-        {
-            method: "POST",
-            headers: {
-                //informa para a api que é um json
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify(jsonData)
-        }
-    )
-    
-
-    .then(response => {
-        if(!response.ok)
-        {
-            throw new Error(`http error. status: ${response.status}`)
-        }
-
-        return response.json();
+    const response = await fetch( urlAPI, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(jsonData)
     })
 
+    const data = await response.json();
 
-    .then(data => {
+    if(response.status === 409){
+        showMessage("User already exists. change the name or email.");
+        return;
+    }
+
+    if (response.status === 201){
         console.log(`success: ${data}`)
 
         showMessage("Sucess while creating a user", "success");
-
+        
         form.reset();
-    })
+    }
 
-    .catch(error => {
-        console.error(`Error ${error}`);
+    console.log(`error: ${data}`)
+    
+    showMessage("Sucess while creating a user", "success");
 
-        showMessage("Error while creating a user", "error");
-    })
+    return response.json();
 })

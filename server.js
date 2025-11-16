@@ -1,11 +1,10 @@
 const express = require('express');
 const cors = require("cors");
-const bcrypt = require("bcrypt");
+
 
 const port = 3000;
 
 const app = express();
-const saltRounds = 10;
 
 app.use(cors({origin: "*"}));
 app.use(express.json());
@@ -19,53 +18,13 @@ app.get("/api/status", (req, res) => {
 
 let users = [];
 
-app.post("/silent/users/create-user", async (req, res) => {
+const UserController = require("./controllers/userController.js");
+const userController = new UserController(users);
 
-    try {
-        const salt = await bcrypt.genSalt(saltRounds);
-        const hashedPassword = await bcrypt.hash(req.body.password, salt);
-        
-        const doesUserAlreadyExists = (
-            users.find(user => user.name === req.body.name && user.email === req.body.email && user.password === hashedPassword)
-        );
+//cria usuários
+app.post("/silent/users/create-user", (req, res) => { userController.createUser(req, res) });
 
-        if (doesUserAlreadyExists)
-        {
-            res.status(409).json({
-                "message": "user already exists"
-            })
-
-            return;
-        }
-
-        const user = {
-            "name": req.body.name,
-            "email": req.body.email,
-            "password": hashedPassword,
-            "id": users.length + 1
-        };
-
-        users.push(user)
-
-        res.status(201).json({
-            "message": "created user sucessfuly",
-            "data": {user}
-        })
-
-        console.log(`created user id ${user.id}`)
-    }
-
-    catch (error) {
-        res.status(500).json({
-            "message": "error"
-        })
-
-        console.log(`Status: 500`);
-        console.log(`${error}`)
-    }
-
-});
-
+//mostra usuários
 app.get("/silent/users", (req, res) => {
     res.json(users);
 });
@@ -73,6 +32,7 @@ app.get("/silent/users", (req, res) => {
 app.get("/silent/users/:id", (req, res) => {
     const userId = parseInt(req.params.id);
 
+    //procura usuários com esse id
     const user = users.find(u => u.id === userId);
 
     if(user)
@@ -94,28 +54,32 @@ app.post("/silent/users/login", (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
 
+    //procura um usuário como o mesmo email para logar
     const isAllowed = (
         users.find(user => user.email === email && user.password === password) 
     );
 
+    //verifica se o usuário pode entrar ou não
+
     if(!isAllowed)
     {
-        res.status(401).json({
+        //usuário vai estar permitido? não
+        return res.status(401).json({
             "message": "user not allowed."
         });
-
-        return;
     }
 
     if(isAllowed)
     {
-        //usuário vai estar permitido? sim?
+        //usuário vai estar permitido? sim
         res.status(201).json({
             "message": "user allowed"
         });
     }
 })
 
+
+//launch server at port 3000
 app.listen(port, () => {
     console.log("Listening to port 3000");
     console.log("Test route: localhost:3000/api/status");
