@@ -49,7 +49,7 @@ app.post("/silent/users/create-user", async (req, res) => {
 
         res.status(201).json({
             "message": "created user sucessfuly",
-            "data": user
+            "data": {user}
         })
 
         console.log(`created user id ${user.id}`)
