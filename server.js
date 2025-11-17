@@ -18,11 +18,11 @@ app.get("/api/status", (req, res) => {
 
 let users = [];
 
-const UserController = require("./controllers/userController.js");
-const userController = new UserController(users);
+const userService = require("./services/userService.js");
+const UserService = new userService(users);
 
 //cria usuários
-app.post("/silent/users/create-user", (req, res) => { userController.createUser(req, res) });
+app.post("/silent/users/create-user", (req, res) => { UserService.createUser(req, res) });
 
 //mostra usuários
 app.get("/silent/users", (req, res) => {
@@ -30,16 +30,24 @@ app.get("/silent/users", (req, res) => {
 });
 
 app.get("/silent/users/:id", (req, res) => {
-    const userId = parseInt(req.params.id);
+
+    const userId = req.params.id;
 
     //procura usuários com esse id
     const user = users.find(u => u.id === userId);
+
+    const { name, email, createdAt, id } = user;
 
     if(user)
     {
         res.status(200).json({
             "message": "user found sucessefully",
-            "data": user
+            "data": {
+                "name": name,
+                "email": email,
+                "createdAt": createdAt,
+                "id": id
+            }
         });
     }
     else
@@ -51,8 +59,7 @@ app.get("/silent/users/:id", (req, res) => {
 });
 
 app.post("/silent/users/login", (req, res) => {
-    const email = req.body.email;
-    const password = req.body.password;
+    const { email, password, isVerified } = req.body;
 
     //procura um usuário como o mesmo email para logar
     const isAllowed = (
@@ -61,7 +68,7 @@ app.post("/silent/users/login", (req, res) => {
 
     //verifica se o usuário pode entrar ou não
 
-    if(!isAllowed)
+    if(!isAllowed || !isVerified)
     {
         //usuário vai estar permitido? não
         return res.status(401).json({
@@ -69,7 +76,7 @@ app.post("/silent/users/login", (req, res) => {
         });
     }
 
-    if(isAllowed)
+    if(isAllowed && isVerified)
     {
         //usuário vai estar permitido? sim
         res.status(201).json({
